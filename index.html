@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App</title>
+    <title>Pigeon</title>
     <!-- Font Awesome CDN for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -412,6 +412,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* Added max-height and overflow for scrollability */
+            max-height: calc(100vh - 140px); /* 100vh - 60px(nav) - 70px(bottom offset) - 10px(top margin) */
+            overflow-y: auto; /* Enable scrolling for content within the card */
         }
 
         .profile-card.active {
@@ -433,6 +436,7 @@
             cursor: pointer;
             overflow: hidden; /* Ensure image stays within circle */
             border: 3px solid #060b30; /* Accent border */
+            flex-shrink: 0; /* Ensure it does not shrink */
         }
 
         .profile-picture {
@@ -440,6 +444,7 @@
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
+            display: block; /* Ensure it behaves as a block element */
         }
 
         .profile-name {
@@ -606,6 +611,7 @@
 
             .profile-card.active {
                 bottom: 60px; /* Adjusted for smaller nav bar with buffer */
+                max-height: calc(100vh - 110px); /* Adjusted max-height for mobile */
             }
         }
     </style>
