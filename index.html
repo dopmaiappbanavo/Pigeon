@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font as per instructions */
+            margin: 0;
+            padding: 0;
+            background-color: #FFFFFF; /* White background color */
+            color: #000000; /* Black text color */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            overflow-x: hidden; /* Prevent horizontal scrollbar */
+            position: relative; /* For absolute positioning of FAB and menu */
+            padding-bottom: 60px; /* Space for the fixed bottom navigation bar */
+        }
+
+        /* New class to prevent scrolling on the body */
+        body.no-scroll {
+            overflow: hidden;
+        }
+
+        /* Header Styling */
+        .app-header {
+            background-color: transparent;
+            color: #000000;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .app-header .logo {
+            display: flex; /* Use flex to align image and text if both are present */
+            align-items: center;
+        }
+
+        .app-logo {
+            height: 40px; /* Adjust height as needed for your logo */
+            width: auto; /* Maintain aspect ratio */
+            border-radius: 5px; /* Slightly rounded corners for the logo image */
+        }
+
+        .app-header .search-icon {
+            font-size: 1.5rem; /* Size of the search icon */
+            color: #000000; /* Color of the search icon */
+            cursor: pointer;
+            margin-left: auto; /* Push to the right */
+            padding: 5px; /* Add some padding for clickability */
+            font-weight: normal; /* Ensure search icon is not bold */
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #eee;
+            position: absolute;
+            top: 100%; /* Position below the header */
+            left: 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+            z-index: 90; /* Below header but above main content */
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        .search-container.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .search-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            margin: 10px 0;
+            font-size: 1rem;
+            background-color: #e9e9e9;
+            outline: none;
+            padding-right: 70px; /* Make space for icons on the right */
+        }
+
+        .clear-search-icon,
+        .search-submit-icon {
+            position: absolute;
+            font-size: 1.2rem;
+            color: #666;
+            cursor: pointer;
+            padding: 8px; /* Make them easily clickable */
+            transition: color 0.2s ease;
+        }
+
+        .clear-search-icon {
+            right: 40px; /* Position to the left of the search icon */
+            display: none; /* Hidden by default, show when input has value */
+        }
+
+        .search-submit-icon {
+            right: 10px; /* Position on the far right */
+        }
+
+        .clear-search-icon:hover,
+        .search-submit-icon:hover {
+            color: #000;
+        }
+
+        /* Main Content Area */
+        .chat-main {
+            flex-grow: 1;
+            padding: 0 1rem; /* Adjust padding for full width content */
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative; /* For positioning FAB */
+            overflow-y: auto; /* Allow scrolling for chat list */
+        }
+
+        /* Story Section */
+        .story-section {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1rem;
+        }
+
+        .story-header {
+            display: block; /* Changed from flex to block */
+            margin-bottom: 1rem;
+        }
+
+        .story-header h3 {
+            font-size: 1.1rem;
+            margin: 0; /* Reset margin */
+        }
+
+        .story-list {
+            display: flex;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            padding-bottom: 10px; /* Space for scrollbar */
+            gap: 15px; /* Space between stories */
+            max-height: 200px; /* Max height when expanded */
+            opacity: 1;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        /* Hide scrollbar for aesthetic purposes */
+        .story-list::-webkit-scrollbar {
+            display: none;
+        }
+        .story-list {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .story-item {
+            flex-shrink: 0; /* Prevent items from shrinking */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 60px; /* Fixed width for story item */
+        }
+
+        .story-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #060b30; /* Updated border color */
+            padding: 2px; /* Space for border */
+        }
+
+        .story-item p {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            color: #555;
+            white-space: nowrap; /* Prevent name from wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Add ellipsis if name is too long */
+            width: 100%; /* Ensure text-overflow works */
+        }
+
+        .add-story-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: #666;
+            border: 1px dashed #ccc; /* Dashed border for add story */
+        }
+
+        /* Chats List */
+        .chats-heading {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .chat-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .chat-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .chat-item:last-child {
+            border-bottom: none;
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .chat-info {
+            flex-grow: 1;
+        }
+
+        .chat-info h4 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: normal; /* Changed to normal */
+        }
+
+        .chat-info p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        .chat-meta .timestamp {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .chat-meta .unread-badge {
+            background-color: #060b30; /* Main accent color */
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* FAB Menu Card (appears from bottom) */
+        .fab-menu-card {
+            position: fixed;
+            bottom: -300px; /* Start off-screen at the bottom */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            width: 90%;
+            max-width: 350px;
+            background-color: #FFFFFF;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            box-sizing: border-box;
+            transition: bottom 0.3s ease-out; /* Smooth slide-up animation */
+            z-index: 201; /* Above FAB and overlay */
+            opacity: 0; /* Start invisible */
+            visibility: hidden; /* Hide from screen readers */
+        }
+
+        /* Adjusted bottom position to be above the bottom nav bar */
+        .fab-menu-card.active {
+            bottom: 60px; /* Slide into view, above nav bar */
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .fab-menu-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .fab-menu-card li {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .fab-menu-card li:last-child {
+            border-bottom: none;
+        }
+
+        .fab-menu-card li .icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            color: #000000; /* Black icon color */
+        }
+
+        .fab-menu-card li a {
+            text-decoration: none;
+            color: #000000;
+            font-size: 1.1rem;
+            flex-grow: 1;
+        }
+
+        .fab-menu-card .cancel-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .fab-menu-card .cancel-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Overlay for FAB menu */
+        .fab-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+            z-index: 200; /* Below FAB menu, above other content */
+            display: none; /* Hidden by default */
+        }
+
+        .fab-overlay.active {
+            display: block; /* Show when FAB menu is active */
+        }
+
+        /* Profile Card Styling */
+        .profile-card {
+            position: fixed;
+            bottom: -100%; /* Start off-screen at the bottom */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            width: 90%;
+            max-width: 400px;
+            background-color: #FFFFFF;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            box-sizing: border-box;
+            transition: bottom 0.3s ease-out; /* Smooth slide-up animation */
+            z-index: 201; /* Above FAB and overlay */
+            opacity: 0; /* Start invisible */
+            visibility: hidden; /* Hide from screen readers */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .profile-card.active {
+            bottom: 60px; /* Slide into view, above nav bar */
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .profile-picture-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            overflow: hidden; /* Ensure image stays within circle */
+            border: 3px solid #060b30; /* Accent border */
+        }
+
+        .profile-picture {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .profile-options-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .profile-options-list li {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .profile-options-list li:last-child {
+            border-bottom: none;
+        }
+
+        .profile-options-list li .icon {
+            font-size: 1.3rem;
+            margin-right: 15px;
+            color: #000000;
+        }
+
+        .profile-options-list li a {
+            text-decoration: none;
+            color: #000000;
+            font-size: 1rem;
+            flex-grow: 1;
+        }
+
+        .profile-card .close-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .profile-card .close-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #FFFFFF; /* White background */
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 999; /* Increased z-index for higher priority */
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            transition: none; /* Ensure no transition on appearance */
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #666; /* Default color for icons/text */
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 5px; /* Initial padding */
+            flex: 1; /* Distribute space evenly */
+            transition: color 0.3s ease, background-color 0.3s ease, transform 0.3s ease, padding 0.3s ease; /* Smooth transitions */
+        }
+
+        .nav-item .nav-icon {
+            font-size: 1.5rem; /* Icon size */
+            margin-bottom: 3px;
+            transition: font-size 0.3s ease, color 0.3s ease; /* Smooth icon size and color transition */
+        }
+
+        .nav-item.active {
+            color: #060b30; /* Accent color for text/icon */
+            background-color: rgba(6, 11, 48, 0.1); /* Light, semi-transparent background */
+            border-radius: 50px; /* Pill shape */
+            transform: translateY(-5px); /* Slight lift effect */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 5px 15px; /* More horizontal padding for pill effect */
+        }
+
+        .nav-item.active .nav-icon {
+            font-size: 1.7rem; /* Slightly larger icon for active state */
+            color: #060b30; /* Ensure icon color is accent color */
+        }
+
+        .nav-item:hover:not(.active) { /* Hover effect for non-active items */
+            color: #060b30; /* Accent color on hover */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding-bottom: 50px; /* Adjust padding for smaller nav bar on mobile */
+            }
+            .app-header {
+                padding: 0.8rem;
+            }
+
+            .app-header .logo {
+                /* Removed font-size for logo text as text is removed */
+            }
+
+            /* Removed .fab and .fab-container styles as they are no longer used */
+            .fab-menu-card.active {
+                bottom: 50px; /* Adjusted to be above smaller nav bar */
+            }
+
+            .fab-menu-card {
+                width: 95%; /* Wider on smaller screens */
+                padding: 15px;
+            }
+
+            .story-avatar {
+                width: 45px;
+                height: 45px;
+            }
+
+            .chat-avatar {
+                width: 45px;
+                height: 45px;
+            }
+
+            .chat-item {
+                padding: 12px 0;
+            }
+
+            .bottom-nav {
+                height: 50px; /* Smaller height for mobile nav bar */
+            }
+
+            .nav-item {
+                font-size: 0.65rem;
+            }
+
+            .nav-item .nav-icon {
+                font-size: 1.3rem;
+            }
+            .nav-item.active .nav-icon {
+                font-size: 1.5rem; /* Adjusted active icon size for smaller screens */
+            }
+
+            .profile-card.active {
+                bottom: 50px; /* Adjusted for smaller nav bar */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <!-- Placeholder for your logo image - REPLACE THIS URL with your publicly accessible image -->
+            <img src="https://placehold.co/40x40/FFFFFF/000000?text=Logo" alt="Chat App Logo" class="app-logo">
+        </div>
+        <!-- Search icon for chats -->
+        <div class="search-icon" id="search-icon">
+            <i class="fas fa-search"></i>
+        </div>
+        <!-- Search input container -->
+        <div class="search-container" id="search-container">
+            <input type="text" id="chat-search-input" class="search-input" placeholder="Search chats...">
+            <i class="fas fa-times-circle clear-search-icon" id="clear-search-icon"></i> <!-- Cross icon -->
+            <i class="fas fa-search search-submit-icon" id="search-submit-icon"></i> <!-- Search icon -->
+        </div>
+    </header>
+
+    <main class="chat-main">
+        <!-- Story Section -->
+        <div class="story-section">
+            <div class="story-header" id="story-header">
+                <h3>Add story</h3>
+            </div>
+            <div class="story-list" id="story-list">
+                <div class="story-item">
+                    <div class="add-story-icon">+</div>
+                    <p>Add story</p>
+                </div>
+                <!-- Example Story Items -->
+                <div class="story-item">
+                    <img src="https://placehold.co/50x50/EAEAEA/000000?text=S" alt="Story Avatar" class="story-avatar">
+                    <p>Story 1</p>
+                </div>
+                <div class="story-item">
+                    <img src="https://placehold.co/50x50/D1ECF1/000000?text=T" alt="Story Avatar" class="story-avatar">
+                    <p>Story 2</p>
+                </div>
+                <div class="story-item">
+                    <img src="https://placehold.co/50x50/EAEAEA/000000?text=C" alt="Story Avatar" class="story-avatar">
+                    <p>Story 3</p>
+                </div>
+                <div class="story-item">
+                    <img src="https://placehold.co/50x50/D1ECF1/000000?text=R" alt="Story Avatar" class="story-avatar">
+                    <p>Story 4</p>
+                </div>
+                <div class="story-item">
+                    <img src="https://placehold.co/50x50/EAEAEA/000000?text=N" alt="Story Avatar" class="story-avatar">
+                    <p>Story 5</p>
+                </div>
+                <div class="story-item">
+                    <img src="https://placehold.co/50x50/D1ECF1/000000?text=M" alt="Story Avatar" class="story-avatar">
+                    <p>Story 6</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chats List Section -->
+        <h3 class="chats-heading">Chats</h3>
+        <ul class="chat-list" id="chat-list">
+            <!-- Existing Chat Items -->
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=AC" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Angel Curtis</h4>
+                    <p>Please help me find a good monitor for t...</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <span class="unread-badge">2</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=ZD" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Zaire Dorwart</h4>
+                    <p>✔ Gacor pisan kang</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <!-- No unread badge for this one -->
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=KM" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Kelas Malam</h4>
+                    <p>Bima: No one can come today?</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <span class="unread-badge">2</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=JG" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Jocelyn Gouse</h4>
+                    <p>You're now an admin</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <!-- No unread badge for this one -->
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=JD" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Jaylon Dias</h4>
+                    <p>Buy back 10k gallons, top up credit, b...</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <span class="unread-badge">2</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=CM" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Chance Rhiel Madsen</h4>
+                    <p>Thank you mate!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <!-- No unread badge for this one -->
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=LD" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Livia Dias</h4>
+                    <p>Hello! How are you?</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">02:11</span>
+                    <!-- No unread badge for this one -->
+                </div>
+            </li>
+            <!-- Added 20 more chat items -->
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=AB" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Alice Brown</h4>
+                    <p>Meeting scheduled for tomorrow.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">01:00</span>
+                    <span class="unread-badge">1</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=CD" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Chris Davis</h4>
+                    <p>Don't forget the presentation.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Yesterday</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=EF" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Emily Fox</h4>
+                    <p>Can you send me the report?</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Mon</span>
+                    <span class="unread-badge">3</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=GH" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>George Harris</h4>
+                    <p>I'll be there in 5 minutes.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Sun</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=IJ" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Ivy Jones</h4>
+                    <p>Happy birthday!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Sat</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=KL" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Kevin Lee</h4>
+                    <p>Let's catch up soon.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Fri</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=MN" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Mia Nelson</h4>
+                    <p>Sounds good!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Thu</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=OP" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Olivia Parker</h4>
+                    <p>Check out this link.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Wed</span>
+                    <span class="unread-badge">1</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=QR" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Quinn Roberts</h4>
+                    <p>Got it, thanks!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Tue</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=ST" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Sam Taylor</h4>
+                    <p>What time are you free?</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Mon</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=UV" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Uma Vasquez</h4>
+                    <p>See you tomorrow.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Sun</span>
+                    <span class="unread-badge">2</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=WX" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Will Xavier</h4>
+                    <p>Confirmed.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Sat</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=YZ" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Yara Zuniga</h4>
+                    <p>Almost done with the task.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Fri</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=AA" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Adam Adams</h4>
+                    <p>Thinking of you!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Thu</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=BB" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Bella Baker</h4>
+                    <p>Let's plan something for next week.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Wed</span>
+                    <span class="unread-badge">1</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=CC" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Caleb Clark</h4>
+                    <p>Good morning!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Tue</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=DD" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Diana Day</h4>
+                    <p>Are you free for a call?</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Mon</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=EE" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Ethan Evans</h4>
+                    <p>I'll get back to you shortly.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Sun</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/D1ECF1/000000?text=FF" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Fiona Ford</h4>
+                    <p>Thanks for the help!</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Sat</span>
+                    <span class="unread-badge">3</span>
+                </div>
+            </li>
+            <li class="chat-item">
+                <img src="https://placehold.co/50x50/EAEAEA/000000?text=GG" alt="Chat Avatar" class="chat-avatar">
+                <div class="chat-info">
+                    <h4>Gary Green</h4>
+                    <p>See you there.</p>
+                </div>
+                <div class="chat-meta">
+                    <span class="timestamp">Fri</span>
+                </div>
+            </li>
+        </ul>
+    </main>
+
+    <!-- FAB Menu Card -->
+    <div class="fab-menu-card" id="fab-menu-card">
+        <ul>
+            <li>
+                <i class="fas fa-comment-dots icon"></i> <!-- New Chat icon -->
+                <a href="#">New Chat</a>
+            </li>
+            <li>
+                <i class="fas fa-users icon"></i> <!-- New Group icon -->
+                <a href="#">New Group</a>
+            </li>
+            <li>
+                <i class="fas fa-plus-square icon"></i> <!-- Add Story icon (using plus-square for a story-like feel) -->
+                <a href="#">Add Story</a>
+            </li>
+        </ul>
+        <button class="cancel-button" id="fab-cancel-button">Cancel</button>
+    </div>
+
+    <!-- Overlay for FAB menu -->
+    <div class="fab-overlay" id="fab-overlay"></div>
+
+    <!-- Profile Card -->
+    <div class="profile-card" id="profile-card">
+        <div class="profile-picture-container" id="profile-picture-container">
+            <img src="https://placehold.co/120x120/060b30/FFFFFF?text=P" alt="Profile Picture" class="profile-picture" id="profile-picture">
+            <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+        </div>
+        <p class="profile-name">Your Name Here</p>
+        <ul class="profile-options-list">
+            <li>
+                <i class="fas fa-cog icon"></i>
+                <a href="#">Settings</a>
+            </li>
+            <li>
+                <i class="fas fa-lock icon"></i>
+                <a href="#">Privacy</a>
+            </li>
+            <li>
+                <i class="fas fa-bell icon"></i>
+                <a href="#">Notifications</a>
+            </li>
+            <li>
+                <i class="fas fa-user-friends icon"></i>
+                <a href="#">Friends</a>
+            </li>
+            <li>
+                <i class="fas fa-question-circle icon"></i>
+                <a href="#">Help & Support</a>
+            </li>
+            <li>
+                <i class="fas fa-info-circle icon"></i>
+                <a href="#">About App</a>
+            </li>
+            <li>
+                <i class="fas fa-star icon"></i>
+                <a href="#">Rate App</a>
+            </li>
+            <li>
+                <i class="fas fa-share-alt icon"></i>
+                <a href="#">Share App</a>
+            </li>
+            <li>
+                <i class="fas fa-sign-out-alt icon"></i>
+                <a href="#">Logout</a>
+            </li>
+        </ul>
+        <button class="close-button" id="profile-close-button">Close</button>
+    </div>
+
+    <!-- Overlay for Profile card -->
+    <div class="fab-overlay" id="profile-overlay"></div>
+
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item" id="new-chat-nav-item">
+            <i class="fas fa-plus nav-icon"></i> <!-- Font Awesome plus icon for New -->
+            New
+        </a>
+        <a href="#" class="nav-item active">
+            <i class="fas fa-comment nav-icon"></i> <!-- Font Awesome chat icon -->
+            Chats
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-user-group nav-icon"></i> <!-- Font Awesome user-group icon for Groups -->
+            Groups
+        </a>
+        <a href="#" class="nav-item" id="profile-nav-item">
+            <i class="fas fa-user nav-icon"></i> <!-- Font Awesome user icon for Profile -->
+            Profile
+        </a>
+    </nav>
+
+    <!-- JavaScript for FAB menu functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // FAB Menu elements
+            const newChatNavItem = document.getElementById('new-chat-nav-item');
+            const fabMenuCard = document.getElementById('fab-menu-card');
+            const fabOverlay = document.getElementById('fab-overlay');
+            const fabCancelButton = document.getElementById('fab-cancel-button');
+
+            // Profile Card elements
+            const profileNavItem = document.getElementById('profile-nav-item');
+            const profileCard = document.getElementById('profile-card');
+            const profileOverlay = document.getElementById('profile-overlay');
+            const profileCloseButton = document.getElementById('profile-close-button');
+            const profilePictureContainer = document.getElementById('profile-picture-container');
+            const profilePictureInput = document.getElementById('profile-picture-input');
+            const profilePicture = document.getElementById('profile-picture');
+
+            const body = document.body; // Get the body element
+
+            // Function to toggle FAB menu visibility and body scroll
+            function toggleFabMenu() {
+                fabMenuCard.classList.toggle('active');
+                fabOverlay.classList.toggle('active');
+                body.classList.toggle('no-scroll');
+
+                // Close profile card if it's open
+                if (profileCard.classList.contains('active')) {
+                    toggleProfileCard();
+                }
+            }
+
+            // Function to toggle Profile card visibility and body scroll
+            function toggleProfileCard() {
+                profileCard.classList.toggle('active');
+                profileOverlay.classList.toggle('active');
+                body.classList.toggle('no-scroll');
+
+                // Close FAB menu if it's open
+                if (fabMenuCard.classList.contains('active')) {
+                    toggleFabMenu();
+                }
+            }
+
+            // Event listeners for FAB menu
+            newChatNavItem.addEventListener('click', toggleFabMenu);
+            fabOverlay.addEventListener('click', toggleFabMenu); // Close when clicking overlay
+            fabCancelButton.addEventListener('click', toggleFabMenu); // Close when clicking cancel button
+
+            // Event listeners for Profile card
+            profileNavItem.addEventListener('click', toggleProfileCard);
+            profileOverlay.addEventListener('click', toggleProfileCard); // Close when clicking overlay
+            profileCloseButton.addEventListener('click', toggleProfileCard); // Close when clicking close button
+
+            // Handle profile picture click to open file input
+            profilePictureContainer.addEventListener('click', () => {
+                profilePictureInput.click();
+            });
+
+            // Handle file selection for profile picture
+            profilePictureInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        profilePicture.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+
+            // Bottom Navigation Bar active state
+            const navItems = document.querySelectorAll('.nav-item');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function(event) {
+                    // Prevent default link behavior (page reload)
+                    event.preventDefault();
+
+                    // Remove active class from all items
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    // Add active class to the clicked item
+                    this.classList.add('active');
+
+                    // If the FAB menu is active AND the clicked item is NOT the new chat button, close it
+                    if (fabMenuCard.classList.contains('active') && this.id !== 'new-chat-nav-item') {
+                        toggleFabMenu();
+                    }
+                    // If the Profile card is active AND the clicked item is NOT the profile button, close it
+                    if (profileCard.classList.contains('active') && this.id !== 'profile-nav-item') {
+                        toggleProfileCard();
+                    }
+                });
+            });
+
+            // Search functionality
+            const searchIcon = document.getElementById('search-icon'); // Header search icon
+            const searchContainer = document.getElementById('search-container');
+            const chatSearchInput = document.getElementById('chat-search-input');
+            const chatList = document.getElementById('chat-list');
+            const chatItems = chatList.querySelectorAll('.chat-item');
+            const clearSearchIcon = document.getElementById('clear-search-icon'); // New cross icon
+            const searchSubmitIcon = document.getElementById('search-submit-icon'); // New search icon in bar
+
+            // Function to show/hide clear icon based on input value
+            function toggleClearIcon() {
+                if (chatSearchInput.value.length > 0) {
+                    clearSearchIcon.style.display = 'block';
+                } else {
+                    clearSearchIcon.style.display = 'none';
+                }
+            }
+
+            searchIcon.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent this click from immediately propagating to document
+                searchContainer.classList.toggle('active');
+                if (searchContainer.classList.contains('active')) {
+                    chatSearchInput.focus(); // Focus input when active
+                    toggleClearIcon(); // Check if clear icon should be visible
+                } else {
+                    chatSearchInput.value = ''; // Clear input when closing
+                    filterChats(); // Reset filter when closing search
+                    toggleClearIcon(); // Hide clear icon
+                }
+            });
+
+            chatSearchInput.addEventListener('input', () => {
+                filterChats();
+                toggleClearIcon(); // Toggle clear icon on input
+            });
+
+            // Prevent clicks inside the search container from closing it
+            searchContainer.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+
+            // Event listener for the new search icon inside the search bar
+            searchSubmitIcon.addEventListener('click', () => {
+                filterChats(); // Perform search (already real-time, but confirms)
+                searchContainer.classList.remove('active'); // Hide search bar
+                chatSearchInput.value = ''; // Clear input
+                toggleClearIcon(); // Hide clear icon
+            });
+
+            // Event listener for the new clear icon
+            clearSearchIcon.addEventListener('click', () => {
+                chatSearchInput.value = ''; // Clear input
+                filterChats(); // Show all chats
+                toggleClearIcon(); // Hide clear icon
+                chatSearchInput.focus(); // Keep focus on search input
+            });
+
+            function filterChats() {
+                const searchTerm = chatSearchInput.value.toLowerCase();
+                chatItems.forEach(item => {
+                    const chatName = item.querySelector('h4').textContent.toLowerCase();
+                    const lastMessage = item.querySelector('p').textContent.toLowerCase();
+
+                    if (chatName.includes(searchTerm) || lastMessage.includes(searchTerm)) {
+                        item.style.display = 'flex'; // Show the item
+                    } else {
+                        item.style.display = 'none'; // Hide the item
+                    }
+                });
+            }
+
+            // Global click listener to hide search bar when clicking outside
+            document.addEventListener('click', (event) => {
+                // Check if the clicked element is NOT the search icon and NOT inside the search container
+                if (!searchIcon.contains(event.target) && !searchContainer.contains(event.target)) {
+                    if (searchContainer.classList.contains('active')) {
+                        searchContainer.classList.remove('active');
+                        chatSearchInput.value = ''; // Clear input
+                        filterChats(); // Reset filter
+                        toggleClearIcon(); // Hide clear icon
+                    }
+                }
+
+                // If the FAB menu is active and clicked outside, close it
+                if (fabMenuCard.classList.contains('active') && !fabMenuCard.contains(event.target) && !newChatNavItem.contains(event.target)) {
+                    toggleFabMenu();
+                }
+
+                // If the Profile card is active and clicked outside, close it
+                if (profileCard.classList.contains('active') && !profileCard.contains(event.target) && !profileNavItem.contains(event.target)) {
+                    toggleProfileCard();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
