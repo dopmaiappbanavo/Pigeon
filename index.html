@@ -415,7 +415,7 @@
         }
 
         .profile-card.active {
-            bottom: 60px; /* Slide into view, above nav bar */
+            bottom: 70px; /* Adjusted to be above nav bar with buffer */
             opacity: 1;
             visibility: visible;
         }
@@ -605,7 +605,7 @@
             }
 
             .profile-card.active {
-                bottom: 50px; /* Adjusted for smaller nav bar */
+                bottom: 60px; /* Adjusted for smaller nav bar with buffer */
             }
         }
     </style>
@@ -1080,7 +1080,7 @@
 
                 // Close profile card if it's open
                 if (profileCard.classList.contains('active')) {
-                    toggleProfileCard();
+                    toggleProfileCard(); // This will also remove 'no-scroll' if it was the only active overlay
                 }
             }
 
@@ -1092,7 +1092,7 @@
 
                 // Close FAB menu if it's open
                 if (fabMenuCard.classList.contains('active')) {
-                    toggleFabMenu();
+                    toggleFabMenu(); // This will also remove 'no-scroll' if it was the only active overlay
                 }
             }
 
